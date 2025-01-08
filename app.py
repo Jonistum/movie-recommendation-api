@@ -1,34 +1,27 @@
+# app.py
+
 from fastapi import FastAPI
 import pandas as pd
 
 app = FastAPI()
 
-# Cargar el dataset
-df = pd.read_csv("notebooks/DATA/movies_cleaned_ready.csv")
-
-
-# Convertir la columna release_date a datetime si aún no lo está
-df['release_date'] = pd.to_datetime(df['release_date'], errors='coerce')
+# Intentar cargar el dataset
+try:
+    df = pd.read_csv("notebooks/DATA/movies_cleaned_ready.csv")
+    df['release_date'] = pd.to_datetime(df['release_date'], errors='coerce')
+except Exception as e:
+    print(f"Error al cargar el dataset: {e}")
+    df = pd.DataFrame()  # Crear un DataFrame vacío en caso de error
 
 @app.get("/cantidad_filmaciones_mes/{mes}")
 def cantidad_filmaciones_mes(mes: str):
     """ Devuelve la cantidad de películas estrenadas en el mes ingresado """
-    # Convertir el mes ingresado a su equivalente en inglés
     meses_en_ingles = {
-        "enero": "January",
-        "febrero": "February",
-        "marzo": "March",
-        "abril": "April",
-        "mayo": "May",
-        "junio": "June",
-        "julio": "July",
-        "agosto": "August",
-        "septiembre": "September",
-        "octubre": "October",
-        "noviembre": "November",
+        "enero": "January", "febrero": "February", "marzo": "March", "abril": "April",
+        "mayo": "May", "junio": "June", "julio": "July", "agosto": "August", 
+        "septiembre": "September", "octubre": "October", "noviembre": "November", 
         "diciembre": "December"
     }
-    
     mes_en_ingles = meses_en_ingles.get(mes.lower())
     
     if mes_en_ingles:
@@ -71,7 +64,6 @@ def votos_titulo(titulo_de_la_filmacion: str):
 @app.get("/get_actor/{nombre_actor}")
 def get_actor(nombre_actor: str):
     """ Devuelve el éxito del actor, la cantidad de películas en las que ha participado y el promedio de retorno """
-    # Filtrar películas con el actor (suponiendo que la columna 'production_companies_names' contiene los actores)
     peliculas_actor = df[df['production_companies_names'].str.contains(nombre_actor, case=False, na=False)]
     if not peliculas_actor.empty:
         cantidad_peliculas = len(peliculas_actor)
@@ -88,7 +80,6 @@ def get_actor(nombre_actor: str):
 @app.get("/get_director/{nombre_director}")
 def get_director(nombre_director: str):
     """ Devuelve el éxito del director con las películas, retorno, costo y ganancia """
-    # Filtrar películas del director (suponiendo que la columna 'production_companies_names' contiene los directores)
     peliculas_director = df[df['production_companies_names'].str.contains(nombre_director, case=False, na=False)]
     if not peliculas_director.empty:
         peliculas_info = []
@@ -108,7 +99,6 @@ def recomendacion(titulo: str):
     """ Devuelve 5 películas recomendadas similares al título ingresado """
     pelicula = df[df['title'].str.lower() == titulo.lower()]
     if not pelicula.empty:
-        # Calcular la similitud con otras películas en base al score de popularidad
         pelicula_score = pelicula.iloc[0]['popularity']
         df['similarity'] = abs(df['popularity'] - pelicula_score)
         peliculas_similares = df.nsmallest(6, 'similarity')
